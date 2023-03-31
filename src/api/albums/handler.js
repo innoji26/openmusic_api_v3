@@ -1,9 +1,10 @@
 const autoBind = require('auto-bind');
 
 class AlbumsHandler {
-    constructor(service, validator) {
+    constructor(service, validator, storageService) {
         this._service = service;
         this._validator = validator;
+        this._storageService = storageService;
 
         autoBind(this);
     }
@@ -57,6 +58,59 @@ class AlbumsHandler {
             message: `Album dengan id ${id} berhasil dihapus`,
         });
         response.code(200);
+        return response;
+    }
+
+    // cover
+    async postUploadCoverHandler(request, h) {
+        const { cover } = request.payload;
+        const { id } = request.params;
+        this._validator.validateAlbumCover(cover.hapi.headers);
+
+        const filename = await this._storageService.writeFile(cover, cover.hapi);
+        const fileLocation = `http://${process.env.HOST}:${process.env.PORT}/albums/file/covers/${filename}`;
+
+        await this._service.postAlbumCoverById(id, fileLocation);
+
+        const response = h.response({
+            status: 'success',
+            message: 'Sampul berhasil diunggah',
+        });
+
+        response.code(201);
+        return response;
+    }
+
+    // like
+    async postAlbumLikeHandler(request, h) {
+        const owner = request.auth.credentials.userId;
+        const { id: albumId } = request.params;
+
+        const message = await this._service.postUserAlbumLikeById(owner, albumId);
+
+        const response = h.response({
+            status: 'success',
+            message: message,
+        });
+
+        response.code(201);
+        return response;
+    }
+
+    async getAlbumLikesHandler(request, h) {
+        const { id: albumId } = request.params;
+        const likes = await this._service.getUserAlbumLikesById(albumId);
+
+        const response = h.response({
+            status: 'success',
+            data: {
+                likes: likes.albumLikes,
+            },
+        });
+        if (likes.source === 'cache') {
+            response.header('X-Data-Source', 'cache');
+            return response;
+        }
         return response;
     }
 }

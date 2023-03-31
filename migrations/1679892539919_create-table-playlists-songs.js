@@ -30,18 +30,9 @@ exports.up = (pgm) => {
 };
 
 exports.down = (pgm) => {
-  pgm.dropConstraint('playlists_songs', 'fk_playlist', {
-    ifExists: true,
-    cascade: true,
-  });
+  pgm.dropConstraint('playlists_songs', 'fk_playlist');
 
-  pgm.dropConstraint('playlists_songs', 'fk_song', {
-    ifExists: true,
-    cascade: true,
-  });
+  pgm.dropConstraint('playlists_songs', 'fk_song');
 
-  pgm.dropTable('playlists_songs', {
-    ifExists: true,
-    cascade: true,
-  });
+  pgm.dropTable('playlists_songs');
 };
